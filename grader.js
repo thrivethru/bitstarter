@@ -21,7 +21,6 @@ References:
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
 */
 
-var util = require('util');
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
@@ -33,14 +32,10 @@ var OUTFILE_DEFAULT = "checked.json";
 var assertFileExists = function(infile) {
     var instr = infile.toString();
     if(!fs.existsSync(instr)) {
-        console.log("%s does not exist. Exiting.", instr);
-        process.exit(1); // http://nodejs.org/api/process.html#process_process_exit_code
+	console.log("%s does not exist. Exiting.", instr);
+	process.exit(1); // http://nodejs.org/api/process.html#process_process_exit_code
     }
     return instr;
-};
-
-var cheerioHtmlFile = function(htmlfile) {
-    return cheerio.load(fs.readFileSync(htmlfile));
 };
 
 var loadChecks = function(checksfile) {
@@ -49,14 +44,15 @@ var loadChecks = function(checksfile) {
 
 var loadURL = function (htmlurl, checksfile, outfile) {
     var loadedHtml = function(result, response) {
-        if (result instanceof Error) {
-            console.error('Error: ' + util.format(response.message));
-        } else {
-            console.error("Loaded %s", htmlurl);
-            var $ = cheerio.load(result);
-            var checkJson = checkHtml($, checksfile);
-            response2Console(checkJson, outfile);
-        }
+	if (result instanceof Error) {
+	    console.error('Error: Unable to load html from %s. Exiting.', htmlurl);
+	    process.exit(1);
+	} else {
+	    console.error("Loaded %s", htmlurl);
+	    var $ = cheerio.load(result);
+	    var checkJson = checkHtml($, checksfile);
+	    response2Console(checkJson, outfile);
+	}
     };
     return loadedHtml;
 };
@@ -67,7 +63,7 @@ var checkHtmlUrl = function(htmlurl, checksfile, outfile) {
 };
 
 var checkHtmlFile = function(htmlfile, checksfile, outfile) {
-    $ = cheerioHtmlFile(htmlfile);
+    var $ = cheerio.load(fs.readFileSync(htmlfile));
     var checkJson = checkHtml($, checksfile);
     response2Console(checkJson, outfile);
 };
@@ -76,14 +72,14 @@ var checkHtml = function($, checksfile) {
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
-        var present = $(checks[ii]).length > 0;
-        out[checks[ii]] = present;
+	var present = $(checks[ii]).length > 0;
+	out[checks[ii]] = present;
     }
     return out;
 };
 
 var response2Console = function(checkJson, outfile) {
-    var outJson = JSON.stringify(checkJson, null, 4);
+j    var outJson = JSON.stringify(checkJson, null, 4);
     fs.writeFileSync(outfile, outJson);
     console.log(outJson);
 };
@@ -96,18 +92,19 @@ var clone = function(fn) {
 
 if (require.main == module) {
     program
-        .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
-        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
-        .option('-o, --outfile <output_file>', 'Path to output file', OUTFILE_DEFAULT)
-        .option('-u, --url <page_url>', 'The URL of the html page')
-        .parse(process.argv);
-    if (program.url != undefined) {
-	console.log('URL\n');
-        checkHtmlUrl(program.url, program.checks, program.outfile);
+	.option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+	.option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+	.option('-o, --outfile <output_file>', 'Path to output file', OUTFILE_DEFAULT)
+	.option('-u, --url <page_url>', 'The URL of the html page')
+	.parse(process.argv);
+    if (program.url !== undefined) {
+	console.log('Grading HTML from URL: %s \n', program.url);
+	checkHtmlUrl(program.url, program.checks, program.outfile);
     } else {
-	console.log('File\n');
-        checkHtmlFile(program.file, program.checks, program.outfile);
+	console.log('Grading HTML from file: %s \n', program.file);
+	checkHtmlFile(program.file, program.checks, program.outfile);
     }
 } else {
     exports.checkHtmlFile = checkHtmlFile;
+    exports.checkHtmlUrl = checkHtmlUrl;
 }
