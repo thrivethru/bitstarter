@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usrN/bin/env node
 /*
 Automatically grade files for the presence of specified HTML tags/attributes.
 Uses commander.js and cheerio. Teaches command line application development
@@ -50,8 +50,7 @@ var loadURL = function (htmlurl, checksfile, outfile) {
 	} else {
 	    console.error("Loaded %s", htmlurl);
 	    var $ = cheerio.load(result);
-	    var checkJson = checkHtml($, checksfile);
-	    response2Console(checkJson, outfile);
+	    checkHtml($, checksfile, outfile);
 	}
     };
     return loadedHtml;
@@ -64,22 +63,21 @@ var checkHtmlUrl = function(htmlurl, checksfile, outfile) {
 
 var checkHtmlFile = function(htmlfile, checksfile, outfile) {
     var $ = cheerio.load(fs.readFileSync(htmlfile));
-    var checkJson = checkHtml($, checksfile);
-    response2Console(checkJson, outfile);
+    checkHtml($, checksfile, outfile);
 };
 
-var checkHtml = function($, checksfile) {
+var checkHtml = function($, checksfile, outfile) {
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
 	var present = $(checks[ii]).length > 0;
 	out[checks[ii]] = present;
     }
-    return out;
+    response2Console(out, outfile);    
 };
 
 var response2Console = function(checkJson, outfile) {
-j    var outJson = JSON.stringify(checkJson, null, 4);
+    var outJson = JSON.stringify(checkJson, null, 4);
     fs.writeFileSync(outfile, outJson);
     console.log(outJson);
 };
